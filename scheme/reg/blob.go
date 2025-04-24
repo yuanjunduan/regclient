@@ -3,6 +3,7 @@ package reg
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io"
@@ -563,6 +564,24 @@ func (reg *Reg) blobPutUploadChunked(ctx context.Context, r ref.Ref, d descripto
 					return d, fmt.Errorf("failed to send blob (parse next chunk location), ref %s: %w", r.CommonName(), err)
 				}
 				chunkURL = *parseURL
+
+				// 提取查询参数中的 _state
+				queryParams := parseURL.Query()
+				stateParam := queryParams.Get("_state")
+				if stateParam != "" {
+					// Base64 解码
+					decodedState, err := base64.RawURLEncoding.DecodeString(stateParam)
+					if err == nil {
+						// 直接打印解码后的字符串
+						reg.slog.info("blobPutUploadChunked process",
+							slog.String("processInfo", string(decodedState)),
+							slog.String("fileSize", d.Size),
+							slog.String("chunkStart", chunkStart),
+						)
+					} else {
+						reg.slog.info("Failed to decode _state: %v", err)
+					}
+				}
 			}
 		}
 	}
@@ -610,6 +629,14 @@ func (reg *Reg) blobPutUploadChunked(ctx context.Context, r ref.Ref, d descripto
 	}
 
 	return d, nil
+}
+
+// 定义 _state 解码后的结构体
+type State struct {
+	Name      string `json:"Name"`
+	UUID      string `json:"UUID"`
+	Offset    int64  `json:"Offset"`
+	StartedAt string `json:"StartedAt"`
 }
 
 // blobUploadCancel stops an upload, releasing resources on the server.
