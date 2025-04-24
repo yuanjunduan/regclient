@@ -573,13 +573,13 @@ func (reg *Reg) blobPutUploadChunked(ctx context.Context, r ref.Ref, d descripto
 					decodedState, err := base64.RawURLEncoding.DecodeString(stateParam)
 					if err == nil {
 						// 直接打印解码后的字符串
-						reg.slog.info("blobPutUploadChunked process",
+						reg.slog.Warn("blobPutUploadChunked process",
 							slog.String("processInfo", string(decodedState)),
 							slog.String("fileSize", d.Size),
 							slog.String("chunkStart", chunkStart),
 						)
 					} else {
-						reg.slog.info("Failed to decode _state: %v", err)
+						reg.slog.Warn("Failed to decode _state: %v", err)
 					}
 				}
 			}
